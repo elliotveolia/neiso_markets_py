@@ -5,7 +5,12 @@ def load_zones(
         t1,
         t2
 ):
-    ## Load in hourly zones with zone-specific temperatures
+    print("=" * 70)
+    print("Loading hourly realtime and day ahead data from CDS")
+    print("Time Period:", t1, " to ", t2)
+    print("=" * 70)
+
+    # Load in hourly zones with zone-specific temperatures
     ct_rt_hourly = cds.fetch_all(
         [cds.QuerySpec(ms="NEISO", mn="load_zone._z_connecticut", mp="realtime_hourly_demand")], t1, t2)
     ct_da_hourly = cds.fetch_all(
@@ -85,5 +90,97 @@ def load_zones(
         "West Central Massachusetts": {"Real Time": wcmass_rt_hourly, "Day Ahead": wcmass_da_hourly},
         "Total": {"Real Time": total_rt_hourly, "Day Ahead": total_da_hourly},
     }
+    print("=" * 70)
+    print("Hourly realtime and day ahead data from CDS successfully loaded")
+    print("=" * 70)
 
     return load_zones
+
+
+def load_vars(
+        t1,
+        t2
+):
+    print("=" * 70)
+    print("Loading variables data from CDS")
+    print("=" * 70)
+
+    ct_temp = cds.fetch_all(
+        [cds.QuerySpec(ms="NOAA-Forecast", mn="CT-Groton", mp="temperature[degF]")], t1, t2)
+    ct_hum = cds.fetch_all(
+        [cds.QuerySpec(ms="NOAA-Forecast", mn="CT-Groton", mp="relativeHumidity[percent]")], t1, t2)
+    ct_dew = cds.fetch_all(
+        [cds.QuerySpec(ms="NOAA-Forecast", mn="CT-Groton", mp="dewpoint[degF]")], t1, t2)
+    ct_cloud = 0
+
+    maine_temp = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="ME.Fairfield.coordinates", mp="temperature_F")], t1, t2)
+    maine_hum = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="ME.Fairfield.coordinates", mp="relativeHumidity")], t1, t2)
+    maine_dew = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="ME.Fairfield.coordinates", mp="dewPoint_F")], t1, t2)
+    maine_cloud = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="ME.Fairfield.coordinates", mp="cloudCoverage")], t1, t2)
+
+    nemass_temp = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Lowell.coordinates", mp="temperature_F")], t1, t2)
+    nemass_hum = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Lowell.coordinates", mp="relativeHumidity")], t1, t2)
+    nemass_dew = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Lowell.coordinates", mp="dewPoint_F")], t1, t2)
+    nemass_cloud = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Lowell.coordinates", mp="cloudCoverage")], t1, t2)
+
+    nh_temp = nemass_temp
+    nh_hum = nemass_hum
+    nh_dew = nemass_dew
+    nh_cloud = nemass_cloud
+
+    ri_temp = ct_temp
+    ri_hum = ct_hum
+    ri_dew = ct_dew
+    ri_cloud = ct_cloud
+
+    semass_temp = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Bridgewater.coordinates", mp="temperature_F")], t1, t2)
+    semass_hum = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Bridgewater.coordinates", mp="relativeHumidity")], t1, t2)
+    semass_dew = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Bridgewater.coordinates", mp="dewPoint_F")], t1, t2)
+    semass_cloud = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Bridgewater.coordinates", mp="cloudCoverage")], t1, t2)
+
+    vt_temp = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="VT.Georgia.coordinates", mp="temperature_F")], t1, t2)
+    vt_hum = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="VT.Georgia.coordinates", mp="relativeHumidity")], t1, t2)
+    vt_dew = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="VT.Georgia.coordinates", mp="dewPoint_F")], t1, t2)
+    vt_cloud = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="VT.Georgia.coordinates", mp="cloudCoverage")], t1, t2)
+
+    wcmass_temp = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Worcester.coordinates", mp="temperature_F")], t1, t2)
+    wcmass_hum = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Worcester.coordinates", mp="relativeHumidity")], t1, t2)
+    wcmass_dew = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Worcester.coordinates", mp="dewPoint_F")], t1, t2)
+    wcmass_cloud = cds.fetch_all(
+        [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="MA.Worcester.coordinates", mp="cloudCoverage")], t1, t2)
+
+    vars = {
+        "Connecticut": {"Temperature": ct_temp, "Humidity": ct_hum, "Dew Point": ct_dew, "Cloud Coverage": ct_cloud},
+        "Maine": {"Temperature": maine_temp, "Humidity": maine_hum, "Dew Point": maine_dew, "Cloud Coverage": maine_cloud},
+        "North East Massachusetts": {"Temperature": nemass_temp, "Humidity": nemass_hum, "Dew Point": nemass_dew, "Cloud Coverage": nemass_cloud},
+        "New Hampshire":{"Temperature": nh_temp, "Humidity": nh_hum, "Dew Point": nh_dew, "Cloud Coverage": nh_cloud},
+        "Rhode Island": {"Temperature": ri_temp, "Humidity": ri_hum, "Dew Point": ri_dew, "Cloud Coverage": ri_cloud},
+        "South East Massachusetts": {"Temperature": semass_temp, "Humidity": semass_hum, "Dew Point": semass_dew, "Cloud Coverage": semass_cloud},
+        "Vermont": {"Temperature": vt_temp, "Humidity": vt_hum, "Dew Point": vt_dew, "Cloud Coverage": vt_cloud},
+        "West Central Massachusetts": {"Temperature": wcmass_temp, "Humidity": wcmass_hum, "Dew Point": wcmass_dew, "Cloud Coverage": wcmass_cloud},
+    }
+
+    print("=" * 70)
+    print("Variable data from CDS successfully loaded")
+    print("=" * 70)
+
+    return vars

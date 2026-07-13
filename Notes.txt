@@ -1,0 +1,38 @@
+#######################################################################################################################
+# Something something dark side #
+#######################################################################################################################
+
+1. Spreads by Zone (spreads_[ZoneName].html)
+
+    What it shows: The difference between RT and DA demand/prices for each zone over time
+    What it tells you:
+        If spread is positive: RT demand is higher than DA forecast (unexpected demand spike)
+        If spread is negative: RT demand is lower than DA forecast (demand was overestimated)
+        Large swings = harder to forecast, more uncertainty
+        Patterns = predictable forecast errors (e.g., always higher in morning)
+
+2. Average Spreads by Zone (average_spreads_by_zone.html)
+
+    What it shows: Which zones have the biggest RT vs DA differences on average
+    What it tells you:
+        High positive average: That zone consistently has higher RT demand than forecasted
+        High negative average: That zone consistently has lower RT demand than forecasted
+        Zones with large spreads = harder to forecast, more volatile, likely higher RT prices
+        This helps identify which zones are most unpredictable
+
+3. Volatility Comparison (volatility_comparison.html)
+
+    What it shows: How much RT prices swing vs DA prices for each zone
+    What it tells you:
+        RT volatility > DA volatility: RT market is more unpredictable/reactive
+        Zones with high RT volatility = more price risk, harder to manage
+        Why it matters: Higher volatility = higher prices (to compensate for risk)
+
+4. Spreads by Hour of Day (spreads_by_hour.html)
+
+    What it shows: When during the day RT vs DA differences are biggest
+    What it tells you:
+        Morning/evening peaks: Demand harder to forecast at peak times
+        Night valleys: More predictable, smaller spreads
+        Patterns = you can predict when RT prices will diverge most from DA
+        This helps identify when to hedge or adjust operations
