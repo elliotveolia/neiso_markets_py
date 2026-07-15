@@ -28,7 +28,7 @@ vars = ls.load_vars(t1, t2)
 #######################################################################################################################
 #gphs.plot_spreads(zones)
 
-# 1. ANALYZE MAINE SPECIFICALLY - Why is it so different?
+# 1. ANALYZE MAINE SPECIFICALLY
 print("=== DEEP DIVE: MAINE ===")
 maine_rt = zones["Maine"]["Real Time"]
 maine_da = zones["Maine"]["Day Ahead"]
@@ -175,3 +175,164 @@ fig.update_yaxes(title_text="Avg Spread (MWh)", row=2, col=1)
 fig.update_layout(height=800, showlegend=False, title_text="Maine Demand Forecast Analysis")
 fig.write_html("maine_deep_dive.html")
 print("Saved: maine_deep_dive.html")
+
+
+
+# Create scatter plots: Spread vs Weather Variables
+weather_vars = ["Temperature", "Humidity", "Dew Point", "Cloud Coverage"]
+
+for zone_name in zones.keys():
+    if zone_name == "Total":
+        continue
+
+    rt_df = zones[zone_name]["Real Time"]
+    da_df = zones[zone_name]["Day Ahead"]
+
+    # Calculate spreads
+    spreads = rt_df.join(da_df, on="tstamp", suffix="_da").sort("tstamp").with_columns(
+        spread=pl.col("demand") - pl.col("demand_da")
+    )
+
+    # Create subplots for each weather variable
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=weather_vars
+    )
+
+    for idx, weather_var in enumerate(weather_vars):
+        row = (idx // 2) + 1
+        col = (idx % 2) + 1
+
+        # Get weather data
+        weather_df = vars[zone_name][weather_var]
+
+        # Join weather with spreads
+        combined = spreads.join(weather_df, on="tstamp", suffix="_weather").sort("tstamp")
+
+        # Get the weather column name (it should be the first non-tstamp column)
+        weather_col = [c for c in weather_df.columns if c != "tstamp"][0]
+
+        fig.add_trace(
+            go.Scatter(
+                x=combined[weather_col],
+                y=combined["spread"],
+                mode='markers',
+                name=weather_var,
+                marker=dict(size=4, opacity=0.6),
+                text=combined["tstamp"],
+                hovertemplate=f"<b>{weather_var}</b>: %{{x:.2f}}<br>Spread: %{{y:.2f}} MWh<br>Time: %{{text}}<extra></extra>"
+            ),
+            row=row, col=col
+        )
+
+        fig.update_xaxes(title_text=weather_var, row=row, col=col)
+        fig.update_yaxes(title_text="Spread (MWh)", row=row, col=col)
+
+    fig.update_layout(
+        title=f"{zone_name}: Spread vs Weather Conditions",
+        height=800,
+        showlegend=False,
+        template='plotly_white'
+    )
+
+    filename = f"spread_vs_weather_{zone_name.replace(' ', '_').replace('/', '_')}.html"
+    fig.write_html(filename)
+    print(f"Saved: {filename}")
+
+# CORRELATION ANALYSIS: Which weather variable correlates most with spreads?
+print("\n=== WEATHER CORRELATION WITH SPREADS ===")
+
+for zone_name in zones.keys():
+    if zone_name == "Total":
+        continue
+
+    rt_df = zones[zone_name]["Real Time"]
+    da_df = zones[zone_name]["Day Ahead"]
+
+    spreads = rt_df.join(da_df, on="tstamp", suffix="_da").sort("tstamp").with_columns(
+        spread=pl.col("demand") - pl.col("demand_da")
+    )
+
+    print(f"\n{zone_name}:")
+
+    for weather_var in weather_vars:
+        weather_df = vars[zone_name][weather_var]
+        weather_col = [c for c in weather_df.columns if c != "tstamp"][0]
+
+        combined = spreads.join(weather_df, on="tstamp", suffix="_weather").sort("tstamp")
+
+        correlation = combined.select(
+            pl.corr("spread", weather_col)
+        ).item()
+
+        print(f"  {weather_var}: {correlation:.4f}")
+
+# MAINE DEEP DIVE: Temperature Bins
+print("\n=== MAINE DEEP DIVE: Temperature Bins ===")
+
+maine_rt = zones["Maine"]["Real Time"]
+maine_da = zones["Maine"]["Day Ahead"]
+maine_spreads = maine_rt.join(maine_da, on="tstamp", suffix="_da").sort("tstamp").with_columns(
+    spread=pl.col("demand") - pl.col("demand_da")
+)
+
+maine_temp_df = vars["Maine"]["Temperature"]
+maine_temp_col = [c for c in maine_temp_df.columns if c != "tstamp"][0]
+
+maine_combined = maine_spreads.join(maine_temp_df, on="tstamp", suffix="_weather").sort("tstamp").with_columns(
+    temp_bin=pl.when(pl.col(maine_temp_col) < 32).then(pl.lit("<32°F"))
+    .when(pl.col(maine_temp_col) < 50).then(pl.lit("32-50°F"))
+    .when(pl.col(maine_temp_col) < 70).then(pl.lit("50-70°F"))
+    .when(pl.col(maine_temp_col) < 90).then(pl.lit("70-90°F"))
+    .otherwise(pl.lit(">90°F"))
+)
+
+temp_analysis = maine_combined.group_by("temp_bin").agg(
+    pl.col("spread").mean().alias("avg_spread"),
+    pl.col("spread").std().alias("std_spread"),
+    pl.col("spread").count().alias("count")
+).sort("temp_bin")
+
+print(temp_analysis)
+
+fig = go.Figure()
+fig.add_trace(go.Bar(
+    x=temp_analysis["temp_bin"],
+    y=temp_analysis["avg_spread"],
+    error_y=dict(type='data', array=temp_analysis["std_spread"]),
+    marker_color='lightblue'
+))
+fig.update_layout(
+    title="Maine: Average Spread by Temperature Range",
+    xaxis_title="Temperature Range",
+    yaxis_title="Average Spread (MWh)",
+    template='plotly_white'
+)
+fig.write_html("maine_temperature_analysis.html")
+print("Saved: maine_temperature_analysis.html")
+
+# COMBINED HEATMAP: Hour of Day vs Temperature
+print("\n=== MAINE: Hour vs Temperature Heatmap ===")
+
+maine_combined_heatmap = maine_combined.with_columns(
+    hour = pl.col("tstamp").dt.hour()
+).group_by("hour", "temp_bin").agg(
+    pl.col("spread").mean().alias("avg_spread")
+)
+
+heatmap_data = maine_combined_heatmap.pivot(index="hour", columns="temp_bin", values="avg_spread")
+
+fig = go.Figure(data=go.Heatmap(
+    z=heatmap_data.to_numpy(),
+    x=heatmap_data.columns,
+    y=heatmap_data["hour"],
+    colorscale='RdBu'
+))
+fig.update_layout(
+    title="Maine: Spread Heatmap (Hour of Day vs Temperature)",
+    xaxis_title="Temperature Range",
+    yaxis_title="Hour of Day",
+    template='plotly_white'
+)
+fig.write_html("maine_heatmap_hour_temp.html")
+print("Saved: maine_heatmap_hour_temp.html")

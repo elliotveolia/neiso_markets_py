@@ -111,7 +111,10 @@ def load_vars(
         [cds.QuerySpec(ms="NOAA-Forecast", mn="CT-Groton", mp="relativeHumidity[percent]")], t1, t2)
     ct_dew = cds.fetch_all(
         [cds.QuerySpec(ms="NOAA-Forecast", mn="CT-Groton", mp="dewpoint[degF]")], t1, t2)
-    ct_cloud = 0
+    ct_cloud = pl.DataFrame({
+        "tstamp": ct_temp["tstamp"],  # Use same timestamps as other CT data
+        "cloud_coverage": [0.0] * len(ct_temp)
+    })
 
     maine_temp = cds.fetch_all(
         [cds.QuerySpec(ms="dev4-TWC-Forecasts", mn="ME.Fairfield.coordinates", mp="temperature_F")], t1, t2)
